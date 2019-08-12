@@ -49,6 +49,7 @@ import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
@@ -786,6 +787,13 @@ public class S3FileSystemProvider extends FileSystemProvider {
 		} else {
 			AWSCredentials credentials = new BasicAWSCredentials(accessKey.toString(), secretKey.toString());
 			client = new AmazonS3Client(new com.amazonaws.services.s3.AmazonS3Client(credentials,config));
+		}
+
+		if (props.getProperty("path_style_access") != null) {
+			S3ClientOptions options = S3ClientOptions.builder()
+					.setPathStyleAccess(Boolean.parseBoolean(props.getProperty("path_style_access")))
+					.build();
+			client.client.setS3ClientOptions(options);
 		}
 
 		if (uri.getHost() != null) {
