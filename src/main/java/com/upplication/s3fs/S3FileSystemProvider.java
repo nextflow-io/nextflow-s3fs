@@ -789,9 +789,9 @@ public class S3FileSystemProvider extends FileSystemProvider {
 			client = new AmazonS3Client(new com.amazonaws.services.s3.AmazonS3Client(credentials,config));
 		}
 
-		if (props.getProperty("path_style_access") != null) {
+		if (props.getProperty("s_3_path_style_access") != null) {
 			S3ClientOptions options = S3ClientOptions.builder()
-					.setPathStyleAccess(Boolean.parseBoolean(props.getProperty("path_style_access")))
+					.setPathStyleAccess(Boolean.parseBoolean(props.getProperty("s_3_path_style_access")))
 					.build();
 			client.client.setS3ClientOptions(options);
 		}
