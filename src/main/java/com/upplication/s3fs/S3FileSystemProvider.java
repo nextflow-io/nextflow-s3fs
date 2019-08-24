@@ -89,6 +89,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
@@ -812,6 +813,16 @@ public class S3FileSystemProvider extends FileSystemProvider {
 						? new BasicAWSCredentials(accessKey.toString(), secretKey.toString())
 						: new BasicSessionCredentials(accessKey.toString(), secretKey.toString(), sessionToken.toString()) );
 			client = new AmazonS3Client(new com.amazonaws.services.s3.AmazonS3Client(credentials,config));
+		}
+
+		// note: path style access is going to be deprecated
+		// https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
+		boolean usePathStyle = "true".equals(props.getProperty("s_3_path_style_access")) || "true".equals(props.getProperty("s3_path_style_access"));
+		if (usePathStyle) {
+			S3ClientOptions options = S3ClientOptions.builder()
+					.setPathStyleAccess(usePathStyle)
+					.build();
+			client.client.setS3ClientOptions(options);
 		}
 
 		if (uri.getHost() != null) {
