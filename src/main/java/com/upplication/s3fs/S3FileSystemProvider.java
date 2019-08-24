@@ -44,30 +44,6 @@
 
 package com.upplication.s3fs;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AccessControlList;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.CopyObjectRequest;
-import com.amazonaws.services.s3.model.Grant;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.Owner;
-import com.amazonaws.services.s3.model.Permission;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-import com.upplication.s3fs.util.IOUtils;
-import com.upplication.s3fs.util.S3MultipartOptions;
-import com.upplication.s3fs.util.S3ObjectSummaryLookup;
-import com.upplication.s3fs.util.S3UploadRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -107,6 +83,30 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.Grant;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.Owner;
+import com.amazonaws.services.s3.model.Permission;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.upplication.s3fs.util.IOUtils;
+import com.upplication.s3fs.util.S3MultipartOptions;
+import com.upplication.s3fs.util.S3ObjectSummaryLookup;
+import com.upplication.s3fs.util.S3UploadRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static com.google.common.collect.Sets.difference;
 import static java.lang.String.format;
 
@@ -140,9 +140,10 @@ public class S3FileSystemProvider extends FileSystemProvider {
 
 	private static Logger log = LoggerFactory.getLogger(S3FileSystemProvider.class);
 
-	public static final String
-            ACCESS_KEY = "access_key";
+	public static final String ACCESS_KEY = "access_key";
 	public static final String SECRET_KEY = "secret_key";
+
+	public static final String SESSION_TOKEN = "session_token";
 
 	final AtomicReference<S3FileSystem> fileSystem = new AtomicReference<>();
 
@@ -165,6 +166,7 @@ public class S3FileSystemProvider extends FileSystemProvider {
 		props = loadAmazonProperties();
 		Object accessKey = props.getProperty(ACCESS_KEY);
 		Object secretKey = props.getProperty(SECRET_KEY);
+		Object sessionToken = props.getProperty(SESSION_TOKEN);
 		// but can overload by envs vars
 		if (env.get(ACCESS_KEY) != null){
 			accessKey = env.get(ACCESS_KEY);
@@ -172,16 +174,20 @@ public class S3FileSystemProvider extends FileSystemProvider {
 		if (env.get(SECRET_KEY) != null){
 			secretKey = env.get(SECRET_KEY);
 		}
+		if (env.get(SESSION_TOKEN) != null){
+			sessionToken = env.get(SESSION_TOKEN);
+		}
 
 		// allows the env variables to override the ones in the property file
 		props.putAll(env);
 
 		Preconditions.checkArgument((accessKey == null && secretKey == null)
 				|| (accessKey != null && secretKey != null),
-				"%s and %s should both be provided or should both be omitted",
-				ACCESS_KEY, SECRET_KEY);
+				"%s and %s (and optionally %s) should be provided or should be omitted",
+				ACCESS_KEY, SECRET_KEY, SESSION_TOKEN);
 
-		S3FileSystem result = createFileSystem(uri, accessKey, secretKey);
+		S3FileSystem result = createFileSystem(uri, accessKey, secretKey, sessionToken);
+
 		// if this instance already has a S3FileSystem, throw exception
 		// otherwise set
 		if (!fileSystem.compareAndSet(null, result)) {
@@ -777,14 +783,34 @@ public class S3FileSystemProvider extends FileSystemProvider {
 	 * @param secretKey Object maybe null for anonymous authentication
 	 * @return S3FileSystem never null
 	 */
+
 	protected S3FileSystem createFileSystem(URI uri, Object accessKey, Object secretKey) {
+		return createFileSystem0(uri, accessKey, secretKey, null);
+	}
+
+	/**
+	 * Create the fileSystem
+	 * @param uri URI
+	 * @param accessKey Object maybe null for anonymous authentication
+	 * @param secretKey Object maybe null for anonymous authentication
+	 * @param sessionToken Object maybe null for anonymous authentication
+	 * @return S3FileSystem never null
+	 */
+	protected S3FileSystem createFileSystem(URI uri, Object accessKey, Object secretKey, Object sessionToken) {
+		return createFileSystem0(uri, accessKey, secretKey, sessionToken);
+	}
+
+	protected S3FileSystem createFileSystem0(URI uri, Object accessKey, Object secretKey, Object sessionToken) {
 		AmazonS3Client client;
 		ClientConfiguration config = createClientConfig(props);
 
 		if (accessKey == null && secretKey == null) {
 			client = new AmazonS3Client(new com.amazonaws.services.s3.AmazonS3Client(config));
 		} else {
-			AWSCredentials credentials = new BasicAWSCredentials(accessKey.toString(), secretKey.toString());
+
+			AWSCredentials credentials = (sessionToken == null
+						? new BasicAWSCredentials(accessKey.toString(), secretKey.toString())
+						: new BasicSessionCredentials(accessKey.toString(), secretKey.toString(), sessionToken.toString()) );
 			client = new AmazonS3Client(new com.amazonaws.services.s3.AmazonS3Client(credentials,config));
 		}
 
