@@ -36,8 +36,8 @@ apply plugin: 'io.codearte.nexus-staging'
 group = 'io.nextflow'
 version = '1.0.6'
 
-targetCompatibility=1.7
-sourceCompatibility=1.7
+targetCompatibility=1.8
+sourceCompatibility=1.8
 
 // In this section you declare where to find the dependencies of your project
 repositories {
@@ -154,3 +154,11 @@ nexusStaging {
 }
 
 task release(dependsOn: [closeRepository, promoteRepository]) { }
+
+// Disable strict javadoc checks
+// See http://blog.joda.org/2014/02/turning-off-doclint-in-jdk-8-javadoc.html
+if (JavaVersion.current().isJava8Compatible()) {
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+}
