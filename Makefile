@@ -1,3 +1,6 @@
+clean: 
+	./gradlew clean
+
 compile: 
 	./gradlew compile
 
