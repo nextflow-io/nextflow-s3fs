@@ -339,6 +339,17 @@ public class S3FileSystemProvider extends FileSystemProvider {
 		return new S3OutputStream(s3,req);
 	}
 
+	protected boolean isAES256Enabled() {
+		String encryption = props.getProperty("storage_encryption");
+		if ( "AES256".equals(encryption) ) {
+			return true;
+		}
+		if( encryption!=null ) {
+			log.warn("Not a valid S3 server-side encryption type: `{}` -- Currently only AES256 is supported",encryption);
+		}
+		return false;
+	}
+
 	@Override
 	public SeekableByteChannel newByteChannel(Path path,
 			Set<? extends OpenOption> options, FileAttribute<?>... attrs)
@@ -384,6 +395,8 @@ public class S3FileSystemProvider extends FileSystemProvider {
                 if (Files.exists(tempFile)) {
                     ObjectMetadata metadata = new ObjectMetadata();
                     metadata.setContentLength(Files.size(tempFile));
+                    if( isAES256Enabled() )
+                    	metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
                     // FIXME: #20 ServiceLoader cant load com.upplication.s3fs.util.FileTypeDetector when this library is used inside a ear :(
 					metadata.setContentType(Files.probeContentType(tempFile));
 
@@ -461,6 +474,8 @@ public class S3FileSystemProvider extends FileSystemProvider {
 
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(0);
+		if( isAES256Enabled() )
+			metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 
 		String keyName = s3Path.getKey()
 				+ (s3Path.getKey().endsWith("/") ? "" : "/");
@@ -538,7 +553,13 @@ public class S3FileSystemProvider extends FileSystemProvider {
 		if( length <= chunkSize ) {
 
 			CopyObjectRequest copyObjRequest = new CopyObjectRequest(s3Source.getBucket(), s3Source.getKey(),s3Target.getBucket(), s3Target.getKey());
-			if (sourceObjMetadata.getSSEAlgorithm()!= null) {
+
+			if( isAES256Enabled() ) {
+				ObjectMetadata targetObjectMetadata = new ObjectMetadata();
+				targetObjectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+				copyObjRequest.setNewObjectMetadata(targetObjectMetadata);
+			}
+			else if (sourceObjMetadata.getSSEAlgorithm()!= null) {
 				ObjectMetadata targetObjectMetadata = new ObjectMetadata();
 				targetObjectMetadata.setSSEAlgorithm(sourceObjMetadata.getSSEAlgorithm());
 				copyObjRequest.setNewObjectMetadata(targetObjectMetadata);
