@@ -843,6 +843,13 @@ public class S3FileSystemProvider extends FileSystemProvider {
 			client.client.setS3ClientOptions(options);
 		}
 
+		// set the client acl
+		String s3Acl = props.getProperty("s_3_acl");
+		if( s3Acl==null )
+			s3Acl = props.getProperty("s3_acl");
+		if( s3Acl!=null )
+			client.setAcl(s3Acl);
+
 		if (uri.getHost() != null) {
 			client.setEndpoint(uri.getHost());
 		}

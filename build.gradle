@@ -31,7 +31,7 @@ apply plugin: 'signing'
 apply plugin: 'io.codearte.nexus-staging'
 
 group = 'io.nextflow'
-version = '1.0.9'
+version = '1.0.10-SNAPSHOT'
 
 targetCompatibility=1.8
 sourceCompatibility=1.8
@@ -119,8 +119,8 @@ uploadArchives {
 
                 licenses {
                     license {
-                        name 'GPLv3'
-                        url 'http://www.gnu.org/licenses/gpl-3.0.txt'
+                        name 'Apache 2.0'
+                        url 'https://github.com/nextflow-io/nextflow-s3fs/blob/master/COPYING'
                     }
                 }
 

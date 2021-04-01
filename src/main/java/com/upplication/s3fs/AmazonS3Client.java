@@ -56,6 +56,7 @@ import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.CopyObjectResult;
@@ -69,6 +70,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Owner;
 import com.amazonaws.services.s3.model.PartETag;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.upplication.s3fs.util.S3MultipartOptions;
@@ -84,7 +86,9 @@ public class AmazonS3Client {
 	private static final Logger log = LoggerFactory.getLogger(AmazonS3Client.class);
 	
 	AmazonS3 client;
-	
+
+	CannedAccessControlList acl;
+
 	public AmazonS3Client(AmazonS3 client){
 		this.client = client;
 	}
@@ -110,13 +114,18 @@ public class AmazonS3Client {
 	 * @see com.amazonaws.services.s3.AmazonS3Client#putObject(String, String, File)
 	 */
 	public PutObjectResult putObject(String bucket, String key, File file) {
-		return client.putObject(bucket, key, file);
+		PutObjectRequest req = new PutObjectRequest(bucket, key, file);
+		if( acl != null )
+			req.withCannedAcl(acl);
+		return client.putObject(req);
 	}
 	/**
 	 * @see com.amazonaws.services.s3.AmazonS3Client#putObject(String, String, java.io.InputStream, ObjectMetadata)
 	 */
-	public PutObjectResult putObject(String bucket, String keyName,
-			InputStream inputStream, ObjectMetadata metadata) {
+	public PutObjectResult putObject(String bucket, String keyName, InputStream inputStream, ObjectMetadata metadata) {
+		PutObjectRequest req = new PutObjectRequest(bucket, keyName, inputStream, metadata);
+		if( acl != null )
+			req.withCannedAcl(acl);
 		return client.putObject(bucket, keyName, inputStream, metadata);
 	}
 	/**
@@ -128,14 +137,18 @@ public class AmazonS3Client {
 	/**
 	 * @see com.amazonaws.services.s3.AmazonS3Client#copyObject(String, String, String, String)
 	 */
-	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName,
-			String destinationKey) {
+	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
+		CopyObjectRequest req = new CopyObjectRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+		if( acl != null )
+			req.withCannedAccessControlList(acl);
 		return client.copyObject(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
 	}
 	/**
 	 * @see com.amazonaws.services.s3.AmazonS3Client#copyObject(CopyObjectRequest)
 	 */
 	public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest) {
+		if( acl != null )
+			copyObjectRequest.withCannedAccessControlList(acl);
 		return client.copyObject(copyObjectRequest);
 	}
 
@@ -158,12 +171,18 @@ public class AmazonS3Client {
 		client.setEndpoint(endpoint);
 	}
 
+	public void setAcl(String acl) {
+		this.acl = CannedAccessControlList.valueOf(acl);
+		log.debug("Setting S3 canned ACL={} [{}]", this.acl, acl);
+	}
+
 	public void setRegion(String regionName) {
 		Region region = RegionUtils.getRegion(regionName);
 		if( region == null )
 			throw new IllegalArgumentException("Not a valid S3 region name: " + regionName);
 		client.setRegion(region);
 	}
+
 
 	/**
 	 * @see com.amazonaws.services.s3.AmazonS3Client#getObjectAcl(String, String)
