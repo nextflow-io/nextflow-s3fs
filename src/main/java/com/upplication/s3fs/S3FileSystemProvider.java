@@ -85,7 +85,6 @@ import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
-import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -331,12 +330,14 @@ public class S3FileSystemProvider extends FileSystemProvider {
 	}
 
 	private S3OutputStream createUploaderOutputStream( S3Path fileToUpload ) {
-		AmazonS3 s3 = fileToUpload.getFileSystem().getClient().client;
+		AmazonS3Client s3 = fileToUpload.getFileSystem().getClient();
 
 		S3UploadRequest req = props != null ? new S3UploadRequest(props) : new S3UploadRequest();
 		req.setObjectId(fileToUpload.toS3ObjectId());
 
-		return new S3OutputStream(s3,req);
+		S3OutputStream stream = new S3OutputStream(s3.getClient(), req);
+		stream.setCannedAcl(s3.getCannedAcl());
+		return stream;
 	}
 
 	protected boolean isAES256Enabled() {
@@ -840,15 +841,11 @@ public class S3FileSystemProvider extends FileSystemProvider {
 			S3ClientOptions options = S3ClientOptions.builder()
 					.setPathStyleAccess(usePathStyle)
 					.build();
-			client.client.setS3ClientOptions(options);
+			client.getClient().setS3ClientOptions(options);
 		}
 
 		// set the client acl
-		String s3Acl = props.getProperty("s_3_acl");
-		if( s3Acl==null )
-			s3Acl = props.getProperty("s3_acl");
-		if( s3Acl!=null )
-			client.setAcl(s3Acl);
+		client.setCannedAcl(getProp(props, "s_3_acl", "s3_acl", "s3Acl"));
 
 		if (uri.getHost() != null) {
 			client.setEndpoint(uri.getHost());
@@ -858,6 +855,15 @@ public class S3FileSystemProvider extends FileSystemProvider {
 		}
 
 		return new S3FileSystem(this, client, uri.getHost());
+	}
+
+	protected String getProp(Properties props, String... keys) {
+		for( String k : keys ) {
+			if( props.containsKey(k) ) {
+				return props.getProperty(k);
+			}
+		}
+		return null;
 	}
 	
 	/**

@@ -85,9 +85,9 @@ public class AmazonS3Client {
 
 	private static final Logger log = LoggerFactory.getLogger(AmazonS3Client.class);
 	
-	AmazonS3 client;
+	private AmazonS3 client;
 
-	CannedAccessControlList acl;
+	private CannedAccessControlList cannedAcl;
 
 	public AmazonS3Client(AmazonS3 client){
 		this.client = client;
@@ -115,8 +115,10 @@ public class AmazonS3Client {
 	 */
 	public PutObjectResult putObject(String bucket, String key, File file) {
 		PutObjectRequest req = new PutObjectRequest(bucket, key, file);
-		if( acl != null )
-			req.withCannedAcl(acl);
+		if( cannedAcl != null ) {
+			log.trace("Setting canned ACL={}; bucket={}; key={}", cannedAcl, bucket, key);
+			req.withCannedAcl(cannedAcl);
+		}
 		return client.putObject(req);
 	}
 	/**
@@ -124,9 +126,11 @@ public class AmazonS3Client {
 	 */
 	public PutObjectResult putObject(String bucket, String keyName, InputStream inputStream, ObjectMetadata metadata) {
 		PutObjectRequest req = new PutObjectRequest(bucket, keyName, inputStream, metadata);
-		if( acl != null )
-			req.withCannedAcl(acl);
-		return client.putObject(bucket, keyName, inputStream, metadata);
+		if( cannedAcl != null ) {
+			log.trace("Setting canned ACL={}; bucket={} and stream", cannedAcl, bucket);
+			req.withCannedAcl(cannedAcl);
+		}
+		return client.putObject(req);
 	}
 	/**
 	 * @see com.amazonaws.services.s3.AmazonS3Client#deleteObject(String, String)
@@ -139,17 +143,21 @@ public class AmazonS3Client {
 	 */
 	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) {
 		CopyObjectRequest req = new CopyObjectRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
-		if( acl != null )
-			req.withCannedAccessControlList(acl);
-		return client.copyObject(sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+		if( cannedAcl != null ) {
+			log.trace("Setting canned ACL={}; sourceBucketName={}; sourceKey={}; destinationBucketName={}; destinationKey={}", cannedAcl, sourceBucketName, sourceKey, destinationBucketName, destinationKey);
+			req.withCannedAccessControlList(cannedAcl);
+		}
+		return client.copyObject(req);
 	}
 	/**
 	 * @see com.amazonaws.services.s3.AmazonS3Client#copyObject(CopyObjectRequest)
 	 */
-	public CopyObjectResult copyObject(CopyObjectRequest copyObjectRequest) {
-		if( acl != null )
-			copyObjectRequest.withCannedAccessControlList(acl);
-		return client.copyObject(copyObjectRequest);
+	public CopyObjectResult copyObject(CopyObjectRequest req) {
+		if( cannedAcl != null ) {
+			log.trace("Setting canned ACL={}; req={}", cannedAcl, req);
+			req.withCannedAccessControlList(cannedAcl);
+		}
+		return client.copyObject(req);
 	}
 
 	/**
@@ -171,9 +179,19 @@ public class AmazonS3Client {
 		client.setEndpoint(endpoint);
 	}
 
-	public void setAcl(String acl) {
-		this.acl = CannedAccessControlList.valueOf(acl);
-		log.debug("Setting S3 canned ACL={} [{}]", this.acl, acl);
+	public void setCannedAcl(String acl) {
+		if( acl==null )
+			return;
+		this.cannedAcl = CannedAccessControlList.valueOf(acl);
+		log.debug("Setting S3 canned ACL={} [{}]", this.cannedAcl, acl);
+	}
+
+	public CannedAccessControlList getCannedAcl() {
+		return cannedAcl;
+	}
+
+	public AmazonS3 getClient() {
+		return client;
 	}
 
 	public void setRegion(String regionName) {

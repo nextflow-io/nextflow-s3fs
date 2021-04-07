@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
@@ -170,6 +171,8 @@ public final class S3OutputStream extends OutputStream {
 
     private int chunkSize;
 
+    private CannedAccessControlList cannedAcl;
+
     /**
      * Creates a s3 uploader output stream
      * @param s3 The S3 client
@@ -209,6 +212,9 @@ public final class S3OutputStream extends OutputStream {
         return expanded;
     }
 
+    public void setCannedAcl(CannedAccessControlList acl) {
+        this.cannedAcl = acl;
+    }
 
     /**
      * @return A MD5 message digester
@@ -546,6 +552,10 @@ public final class S3OutputStream extends OutputStream {
         meta.setContentMD5( Base64.encodeAsString(checksum) );
 
         final PutObjectRequest request = new PutObjectRequest(objectId.getBucket(), objectId.getKey(), content, meta);
+        if( cannedAcl!=null ) {
+            log.trace("Setting canned ACL={} for stream", cannedAcl);
+            request.withCannedAcl(cannedAcl);
+        }
 
         if (storageClass != null) {
             request.setStorageClass(storageClass);
