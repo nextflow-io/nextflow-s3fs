@@ -26,6 +26,7 @@ buildscript {
 
 // Apply the java plugin to add support for Java
 apply plugin: 'java'
+apply plugin: 'groovy'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'io.codearte.nexus-staging'
@@ -51,20 +52,23 @@ dependencies {
     compile ('com.google.guava:guava:11.0.1')
     compile ('org.apache.tika:tika-core:1.5')
 
-    // Declare the dependency for your favourite test framework you want to use in your tests.
-    // TestNG is also supported by the Gradle Test task. Just change the
-    // testCompile dependency to testCompile 'org.testng:testng:6.8.1' and add
-    // 'test.useTestNG()' to your build script.
-    testCompile 'junit:junit:4.11'
-    testCompile 'log4j:log4j:1.2.17'
-    testCompile 'org.slf4j:slf4j-log4j12:1.7.10'
+    // test configuration
     testCompile 'org.slf4j:jcl-over-slf4j:1.7.10'
-    testCompile 'com.github.marschall:zipfilesystem-standalone:1.0.0'
-    testCompile 'com.github.marschall:memoryfilesystem:0.5.4'
-    testCompile 'org.mockito:mockito-core:1.9.5'
-    testCompile "commons-lang:commons-lang:2.6"
-    testCompile 'commons-io:commons-io:2.4'
+    testCompile 'ch.qos.logback:logback-classic:1.2.3'
+    testCompile "org.codehaus.groovy:groovy:3.0.8"
+    testCompile "org.codehaus.groovy:groovy-nio:3.0.8"
+    testCompile "org.codehaus.groovy:groovy-json:3.0.8"
+    testCompile ("org.codehaus.groovy:groovy-test:3.0.8") { exclude group: 'org.codehaus.groovy' }
+    testCompile ("cglib:cglib-nodep:3.3.0")
+    testCompile ("org.objenesis:objenesis:3.1")
+    testCompile ("org.spockframework:spock-core:2.0-M3-groovy-3.0") { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+    testCompile ('org.spockframework:spock-junit4:2.0-M3-groovy-3.0') { exclude group: 'org.codehaus.groovy'; exclude group: 'net.bytebuddy' }
+    testCompile 'com.google.jimfs:jimfs:1.1'
+}
 
+// use JUnit 5 platform
+test {
+    useJUnitPlatform()
 }
 
 
