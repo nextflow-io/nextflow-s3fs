@@ -40,4 +40,3 @@
 #
 
 com.upplication.s3fs.S3FileSystemProvider
-com.github.marschall.memoryfilesystem.MemoryFileSystemProvider
