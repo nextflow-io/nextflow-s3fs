@@ -4,6 +4,8 @@ set -x
 # Make test results available through
 #    https://www.nextflow.io/tests/travis/index.html
 #
+export AWS_ACCESS_KEY_ID=AWS_S3FS_ACCESS_KEY
+export AWS_SECRET_ACCESS_KEY=AWS_S3FS_SECRET_KEY
 export AWS_DEFAULT_REGION=eu-west-1
 
 # use the java version as target context

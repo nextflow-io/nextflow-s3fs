@@ -38,10 +38,10 @@ jobs:
         architecture: x64
 
     - name: Compile
-      run: make assemble
+      run: ./gradlew assemble
 
     - name: Tests
-      run: make test
+      run: ./gradlew test
       env:
         GRADLE_OPTS: '-Dorg.gradle.daemon=false'
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
