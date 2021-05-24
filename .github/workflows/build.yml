@@ -38,7 +38,7 @@ jobs:
         architecture: x64
 
     - name: Compile
-      run: ./gradlew assemble
+      run: ./gradlew compileJava
 
     - name: Tests
       run: ./gradlew test
