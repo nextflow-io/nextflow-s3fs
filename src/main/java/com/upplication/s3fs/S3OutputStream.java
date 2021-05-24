@@ -407,6 +407,11 @@ public final class S3OutputStream extends OutputStream {
             request.setStorageClass(storageClass);
         }
 
+        if( cannedAcl != null ) {
+            log.debug("Setting canned ACL={}; initiateMultipartUpload bucket={}, key={}", cannedAcl, objectId.getBucket(), objectId.getKey());
+            request.withCannedACL(cannedAcl);
+        }
+
         try {
             return s3.initiateMultipartUpload(request);
         } catch (final AmazonClientException e) {

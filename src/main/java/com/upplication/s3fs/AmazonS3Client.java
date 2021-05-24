@@ -233,6 +233,10 @@ public class AmazonS3Client {
 		// Step 2: Initialize
 		InitiateMultipartUploadRequest initiateRequest =
 				new InitiateMultipartUploadRequest(targetBucketName, targetObjectKey);
+		if( cannedAcl!=null ) {
+			log.debug("Setting canned ACL={}; initiateMultipartUpload targetBucketName={}, targetObjectKey={}", cannedAcl, targetBucketName, targetObjectKey);
+			initiateRequest.withCannedACL(cannedAcl);
+		}
 
 		InitiateMultipartUploadResult initResult = client.initiateMultipartUpload(initiateRequest);
 
